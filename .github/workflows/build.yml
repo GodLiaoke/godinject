@@ -1,0 +1,58 @@
+name: Build GODInject IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select an Xcode carrying an iOS 26 SDK
+        run: |
+          set -euo pipefail
+          chosen=""
+          for app in /Applications/Xcode*.app; do
+            [ -d "$app" ] || continue
+            for sdk in "$app"/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS*.sdk; do
+              [ -d "$sdk" ] || continue
+              ver=$(/usr/libexec/PlistBuddy -c 'Print :Version' "$sdk/SDKSettings.plist" 2>/dev/null || echo 0.0)
+              echo "$app -> $(basename "$sdk") version=$ver"
+              if [ "${ver%%.*}" -ge 26 ] 2>/dev/null; then chosen="$app"; fi
+            done
+          done
+          if [ -n "$chosen" ]; then
+            echo "Selected $chosen"
+            sudo xcode-select -s "$chosen"
+          else
+            echo "No iOS 26 SDK found, using default"
+          fi
+          xcrun --sdk iphoneos --show-sdk-version
+
+      - name: Build IPA
+        run: |
+          set -o pipefail
+          bash ./build.sh
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: GODInject-ipa
+          path: GODInject.ipa
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Commit IPA to repo
+        if: success()
+        run: |
+          git config user.email "ci@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add -f GODInject.ipa || true
+          git commit -m "ci: IPA for run ${{ github.run_id }}" || echo "no change"
+          git push origin HEAD:main || echo "push failed"
