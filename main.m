@@ -1,4 +1,4 @@
-//
+﻿//
 //  main.m — GOD 注入器
 //  严格照 Phoenix CodeV 的 DESIGN.md 令牌与规则实现
 //
@@ -669,7 +669,7 @@ typedef NS_ENUM(NSInteger, GODLampShape) {
         }
         self.container = found;
         [self setRow:self.rGame
-                lamp:(found ? GODLampShapeDot : GODLampShapeWait)
+                lamp:(found ? GODLampShapeDot : GODLampShapeRing)
                 tint:(found ? C_GO() : C_WAIT())
                 text:(found ? @"已定位" : @"未找到")];
         [self log:ok ? [NSString stringWithFormat:@"沙盒可用（%lu 项）", (unsigned long)list.count] : @"沙盒不可用"];
