@@ -524,7 +524,7 @@ static void GODScanProgress(int64_t done, int64_t total, BOOL finished) {
 
     // 深色状态栏
     if (@available(iOS 13.0, *)) {
-        self.window.overrideUserInterfaceStyle = UIUserInterfaceStyleDark;
+        self.window.overrideUserInterfaceStyle = UIUserInterfaceStyleLight;
     }
     return YES;
 }
