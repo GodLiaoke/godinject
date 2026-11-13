@@ -203,9 +203,11 @@ enum GODPaths {
 
     /// 找游戏的数据容器（已缓存在 UserDefaults）
     static func gameContainer() -> String? {
-        if let cached = UserDefaults.standard.string(forKey: "god.container"),
-           case let st = stat(), wq_stat(cached, &st), (st.st_mode & S_IFMT) == S_IFDIR {
-            return cached
+        if let cached = UserDefaults.standard.string(forKey: "god.container") {
+            var st = stat()
+            if wq_stat(cached, &st) && (st.st_mode & S_IFMT) == S_IFDIR {
+                return cached
+            }
         }
         let list = (wq_enumerate("/var/mobile/Containers/Data/Application", 0, nil, nil) as? [String]) ?? []
         for d in list {
@@ -219,14 +221,12 @@ enum GODPaths {
 
     /// Documents/DeltaForce/Saved/LuaDebug/LuaSource/DFM/BusinessEntrance
     static func businessEntrance(in container: String) -> String {
-        ((((container as NSString)
-            .appendingPathComponent("Documents") as NSString)
-            .appendingPathComponent("DeltaForce") as NSString)
-            .appendingPathComponent("Saved") as NSString)
-            .appendingPathComponent("LuaDebug") as NSString
-            .appendingPathComponent("LuaSource") as NSString
-            .appendingPathComponent("DFM") as NSString
-            .appendingPathComponent("BusinessEntrance")
+        var p = container
+        for c in ["Documents", "DeltaForce", "Saved", "LuaDebug",
+                  "LuaSource", "DFM", "BusinessEntrance"] {
+            p = (p as NSString).appendingPathComponent(c)
+        }
+        return p
     }
 
     /// 只删 lua（和它的 .bak），目录保留
@@ -238,8 +238,13 @@ enum GODPaths {
         let bak = lua + ".bak"
         var removed = 0
         var st = stat()
-        if wq_stat(lua, &st), wq_delete(lua, nil) { removed += 1 }
-        if wq_stat(bak, &st), wq_delete(bak, nil) { removed += 1 }
+        if wq_stat(lua, &st) {
+            if wq_delete(lua, nil) { removed += 1 }
+        }
+        st = stat()
+        if wq_stat(bak, &st) {
+            if wq_delete(bak, nil) { removed += 1 }
+        }
         if removed == 0 { return "没有可删除的 lua" }
         return "已删除 EntranceFlow.lua" + (removed > 1 ? " 和备份" : "")
     }
