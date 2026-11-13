@@ -16,15 +16,15 @@ static NSString *const kDownloadPath = @"/api/god/download";
 
 #pragma mark - 设计令牌（Palette B · Phoenix Ember）
 
-static UIColor *C_BASE(void)   { return [UIColor colorWithRed:0.039 green:0.020 blue:0.031 alpha:1]; } // #0a0508
-static UIColor *C_SURFACE(void){ return [UIColor colorWithRed:0.094 green:0.039 blue:0.055 alpha:1]; } // #180a0e
-static UIColor *C_SURF2(void)  { return [UIColor colorWithRed:0.063 green:0.024 blue:0.035 alpha:1]; } // #100609
-static UIColor *C_TEXT(void)   { return [UIColor colorWithRed:1.000 green:0.945 blue:0.937 alpha:1]; } // #fff1ef
-static UIColor *C_MUTED(void)  { return [UIColor colorWithRed:0.722 green:0.604 blue:0.600 alpha:1]; } // #b89a99
-static UIColor *C_ACCENT(void) { return [UIColor colorWithRed:1.000 green:0.231 blue:0.188 alpha:1]; } // #ff3b30
-static UIColor *C_GOOD(void)   { return [UIColor colorWithRed:0.184 green:0.824 blue:0.541 alpha:1]; } // #2fd28a
-static UIColor *C_WARN(void)   { return [UIColor colorWithRed:1.000 green:0.722 blue:0.302 alpha:1]; } // #ffb84d
-static UIColor *C_BAD(void)    { return [UIColor colorWithRed:1.000 green:0.420 blue:0.561 alpha:1]; } // #ff6b8f
+static UIColor *C_BASE(void)   { return [UIColor colorWithRed:0.937 green:0.949 blue:0.973 alpha:1]; } // #EFF2F8
+static UIColor *C_SURFACE(void){ return [UIColor whiteColor]; }                                          // #FFFFFF
+static UIColor *C_SURF2(void)  { return [UIColor colorWithRed:0.976 green:0.984 blue:0.996 alpha:1]; } // #F9FBFF
+static UIColor *C_TEXT(void)   { return [UIColor colorWithRed:0.078 green:0.090 blue:0.145 alpha:1]; } // #141725
+static UIColor *C_MUTED(void)  { return [UIColor colorWithRed:0.427 green:0.459 blue:0.529 alpha:1]; } // #6D7587
+static UIColor *C_ACCENT(void) { return [UIColor colorWithRed:0.169 green:0.192 blue:0.376 alpha:1]; } // #2B3160
+static UIColor *C_GOOD(void)   { return [UIColor colorWithRed:0.078 green:0.639 blue:0.412 alpha:1]; } // #14A369
+static UIColor *C_WARN(void)   { return [UIColor colorWithRed:0.847 green:0.549 blue:0.078 alpha:1]; } // #D88C14
+static UIColor *C_BAD(void)    { return [UIColor colorWithRed:0.878 green:0.231 blue:0.341 alpha:1]; } // #E03B57
 
 // 间距档位
 static const CGFloat S1 = 4.0;
@@ -36,8 +36,8 @@ static const CGFloat ROW_H = 52.0;
 static const CGFloat RADIUS = 12.0;
 
 // 细分隔线 / 描边
-static UIColor *C_LINE(void)  { return [C_MUTED() colorWithAlphaComponent:0.16]; }
-static UIColor *C_LINE2(void) { return [C_MUTED() colorWithAlphaComponent:0.28]; }
+static UIColor *C_LINE(void)  { return [C_TEXT() colorWithAlphaComponent:0.10]; }
+static UIColor *C_LINE2(void) { return [C_TEXT() colorWithAlphaComponent:0.18]; }
 
 #pragma mark - 扫描回调
 
