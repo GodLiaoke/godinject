@@ -1,35 +1,43 @@
 ﻿//
 //  main.m — GOD 注入器
+//  视觉：Phoenix Ember（不死鸟·烈焰红）
 //  沙盒访问基于 worse_query（WQAccess），不需要越狱
-//
-//  设计规范：中性色 / 固定间距档位 / 标签居左控件居右 / 分组标题 / 无装饰
 //
 
 #import <UIKit/UIKit.h>
 #import <sys/stat.h>
 #import "WQAccess.h"
 
-// ── 常量 ───────────────────────────────────────────────
+#pragma mark - 常量
+
 static NSString *const kGameBundleID = @"com.tencent.tmgp.dfm";
 static NSString *const kServerBase   = @"https://ios.ouovo.cc";
-static NSString *const kDownloadPath = @"/api/god/download";   // ?card=XXXX
+static NSString *const kDownloadPath = @"/api/god/download";
 
-// ── 设计变量（固定档位，不用魔法数字）───────────────────
-static const CGFloat kSpace1 = 4.0;    // 元素内
-static const CGFloat kSpace2 = 8.0;    // 元素间
-static const CGFloat kSpace3 = 16.0;   // 行内边距
-static const CGFloat kSpace4 = 24.0;   // 组间
-static const CGFloat kSpace5 = 32.0;
-static const CGFloat kRowHeight = 48.0;
-static const CGFloat kRadius = 10.0;
+#pragma mark - 设计令牌（Palette B · Phoenix Ember）
 
-static UIColor *C_BG(void)      { return [UIColor colorWithRed:0.949 green:0.949 blue:0.969 alpha:1]; } // F2F2F7
-static UIColor *C_CARD(void)    { return [UIColor whiteColor]; }
-static UIColor *C_TEXT(void)    { return [UIColor colorWithRed:0.110 green:0.110 blue:0.118 alpha:1]; } // 1C1C1E
-static UIColor *C_TEXT2(void)   { return [UIColor colorWithRed:0.557 green:0.557 blue:0.576 alpha:1]; } // 8E8E93
-static UIColor *C_LINE(void)    { return [UIColor colorWithRed:0.898 green:0.898 blue:0.918 alpha:1]; } // E5E5EA
-static UIColor *C_ACTION(void)  { return [UIColor colorWithRed:0.000 green:0.478 blue:1.000 alpha:1]; } // 007AFF
-static UIColor *C_DANGER(void)  { return [UIColor colorWithRed:1.000 green:0.231 blue:0.188 alpha:1]; } // FF3B30
+static UIColor *C_BASE(void)   { return [UIColor colorWithRed:0.039 green:0.020 blue:0.031 alpha:1]; } // #0a0508
+static UIColor *C_SURFACE(void){ return [UIColor colorWithRed:0.094 green:0.039 blue:0.055 alpha:1]; } // #180a0e
+static UIColor *C_SURF2(void)  { return [UIColor colorWithRed:0.063 green:0.024 blue:0.035 alpha:1]; } // #100609
+static UIColor *C_TEXT(void)   { return [UIColor colorWithRed:1.000 green:0.945 blue:0.937 alpha:1]; } // #fff1ef
+static UIColor *C_MUTED(void)  { return [UIColor colorWithRed:0.722 green:0.604 blue:0.600 alpha:1]; } // #b89a99
+static UIColor *C_ACCENT(void) { return [UIColor colorWithRed:1.000 green:0.231 blue:0.188 alpha:1]; } // #ff3b30
+static UIColor *C_GOOD(void)   { return [UIColor colorWithRed:0.184 green:0.824 blue:0.541 alpha:1]; } // #2fd28a
+static UIColor *C_WARN(void)   { return [UIColor colorWithRed:1.000 green:0.722 blue:0.302 alpha:1]; } // #ffb84d
+static UIColor *C_BAD(void)    { return [UIColor colorWithRed:1.000 green:0.420 blue:0.561 alpha:1]; } // #ff6b8f
+
+// 间距档位
+static const CGFloat S1 = 4.0;
+static const CGFloat S2 = 8.0;
+static const CGFloat S3 = 16.0;
+static const CGFloat S4 = 24.0;
+static const CGFloat S5 = 32.0;
+static const CGFloat ROW_H = 52.0;
+static const CGFloat RADIUS = 12.0;
+
+// 细分隔线 / 描边
+static UIColor *C_LINE(void)  { return [C_MUTED() colorWithAlphaComponent:0.16]; }
+static UIColor *C_LINE2(void) { return [C_MUTED() colorWithAlphaComponent:0.28]; }
 
 #pragma mark - 扫描回调
 
@@ -37,79 +45,82 @@ static BOOL GODConfirmScan(NSString *what, int64_t ids, double seconds) {
     (void)what; (void)ids; (void)seconds;
     return YES;
 }
-
 static void GODScanProgress(int64_t done, int64_t total, BOOL finished) {
     (void)done; (void)total; (void)finished;
 }
 
-#pragma mark - 通用行视图
+#pragma mark - 面板容器
 
-@interface GODRow : UIView
-@property (nonatomic, strong) UILabel *label;
-@property (nonatomic, strong) UILabel *value;
-@property (nonatomic, strong) UIView *separator;
+@interface GODPanel : UIView
 @end
 
-@implementation GODRow
+@implementation GODPanel
 - (instancetype)init {
     if ((self = [super init])) {
-        _label = [[UILabel alloc] init];
-        _label.font = [UIFont systemFontOfSize:17];
-        _label.textColor = C_TEXT();
-        [self addSubview:_label];
-
-        _value = [[UILabel alloc] init];
-        _value.font = [UIFont systemFontOfSize:17];
-        _value.textColor = C_TEXT2();
-        _value.textAlignment = NSTextAlignmentRight;
-        [self addSubview:_value];
-
-        _separator = [[UIView alloc] init];
-        _separator.backgroundColor = C_LINE();
-        [self addSubview:_separator];
+        self.backgroundColor = C_SURFACE();
+        self.layer.cornerRadius = RADIUS;
+        self.layer.borderWidth = 1.0 / [UIScreen mainScreen].scale;
+        self.layer.borderColor = C_LINE().CGColor;
     }
     return self;
 }
 - (void)layoutSubviews {
     [super layoutSubviews];
-    CGFloat w = self.bounds.size.width;
-    CGFloat h = self.bounds.size.height;
-    CGFloat valueMax = w * 0.55;
-    [_value sizeToFit];
-    CGFloat vw = MIN(_value.bounds.size.width, valueMax);
-    _value.frame = CGRectMake(w - kSpace3 - vw, 0, vw, h);
-    _label.frame = CGRectMake(kSpace3, 0, w - kSpace3 * 2 - vw - kSpace2, h);
-    _separator.frame = CGRectMake(kSpace3, h - 0.5, w - kSpace3, 0.5);
+    self.layer.borderColor = C_LINE().CGColor;
 }
 @end
 
-#pragma mark - 分组容器
+#pragma mark - 设置行（标签居左，值居右）
 
-@interface GODGroup : UIView
+@interface GODRow : UIView
+@property (nonatomic, strong) UILabel *name;
+@property (nonatomic, strong) UILabel *value;
+@property (nonatomic, strong) UIView *line;
 @end
 
-@implementation GODGroup
+@implementation GODRow
 - (instancetype)init {
     if ((self = [super init])) {
-        self.backgroundColor = C_CARD();
-        self.layer.cornerRadius = kRadius;
-        // 圆角曲线用默认
+        _name = [[UILabel alloc] init];
+        _name.font = [UIFont systemFontOfSize:15 weight:UIFontWeightRegular];
+        _name.textColor = C_TEXT();
+        [self addSubview:_name];
+
+        _value = [[UILabel alloc] init];
+        _value.font = [UIFont systemFontOfSize:15 weight:UIFontWeightMedium];
+        _value.textColor = C_MUTED();
+        _value.textAlignment = NSTextAlignmentRight;
+        [self addSubview:_value];
+
+        _line = [[UIView alloc] init];
+        _line.backgroundColor = C_LINE();
+        [self addSubview:_line];
     }
     return self;
+}
+- (void)layoutSubviews {
+    [super layoutSubviews];
+    CGFloat w = self.bounds.size.width, h = self.bounds.size.height;
+    [_value sizeToFit];
+    CGFloat vw = MIN(_value.bounds.size.width, w * 0.5);
+    _value.frame = CGRectMake(w - S3 - vw, 0, vw, h);
+    _name.frame = CGRectMake(S3, 0, w - S3 * 2 - vw - S2, h);
+    _line.frame = CGRectMake(S3, h - 0.5, w - S3 * 2, 0.5);
 }
 @end
 
 #pragma mark - 主界面
 
 @interface GODInjectViewController : UIViewController
-@property (nonatomic, strong) UILabel *noticeText;
+@property (nonatomic, strong) UILabel *statusDot;
+@property (nonatomic, strong) UILabel *statusText;
 @property (nonatomic, strong) GODRow *rowAccess;
 @property (nonatomic, strong) GODRow *rowGroup;
 @property (nonatomic, strong) GODRow *rowGame;
-@property (nonatomic, strong) UIButton *btnSetup;
-@property (nonatomic, strong) UIButton *btnStart;
 @property (nonatomic, strong) UITextField *cardField;
 @property (nonatomic, strong) UITextView *logView;
+@property (nonatomic, strong) UIButton *btnSetup;
+@property (nonatomic, strong) UIButton *btnStart;
 @property (nonatomic, assign) BOOL busy;
 @property (nonatomic, copy) NSString *gameContainer;
 @end
@@ -118,152 +129,196 @@ static void GODScanProgress(int64_t done, int64_t total, BOOL finished) {
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.view.backgroundColor = C_BG();
-    self.title = @"GOD";
-    self.navigationController.navigationBar.prefersLargeTitles = NO;
+    self.view.backgroundColor = C_BASE();
+    [self.navigationController setNavigationBarHidden:YES animated:NO];
 
     UIScrollView *scroll = [[UIScrollView alloc] initWithFrame:self.view.bounds];
     scroll.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     scroll.alwaysBounceVertical = YES;
+    scroll.contentInset = UIEdgeInsetsMake(0, 0, 96, 0);
     [self.view addSubview:scroll];
 
-    CGFloat W = self.view.bounds.size.width - kSpace3 * 2;
-    CGFloat y = kSpace4;
+    CGFloat W = self.view.bounds.size.width;
+    CGFloat contentW = W - S3 * 2;
+    CGFloat y = 0;
 
-    // ── 公告 ──
-    UILabel *noticeTitle = [self sectionTitle:@"公告"];
-    noticeTitle.frame = CGRectMake(kSpace3, y, W, 20);
-    [scroll addSubview:noticeTitle];
-    y += 20 + kSpace2;
+    // ── 顶栏 ──
+    UIView *header = [[UIView alloc] initWithFrame:CGRectMake(0, 0, W, 88)];
+    [scroll addSubview:header];
 
-    GODGroup *noticeGroup = [[GODGroup alloc] initWithFrame:CGRectMake(kSpace3, y, W, kRowHeight + 12)];
-    self.noticeText = [[UILabel alloc] initWithFrame:CGRectMake(kSpace3, 6, W - kSpace3 * 2, kRowHeight)];
-    self.noticeText.font = [UIFont systemFontOfSize:15];
-    self.noticeText.textColor = C_TEXT();
-    self.noticeText.numberOfLines = 1;
-    self.noticeText.text = @"内测版 · 卡密验证开发中";
-    [noticeGroup addSubview:self.noticeText];
-    [scroll addSubview:noticeGroup];
-    y += noticeGroup.bounds.size.height + kSpace4;
+    UIView *mark = [[UIView alloc] initWithFrame:CGRectMake(S3, 44, 28, 28)];
+    mark.backgroundColor = C_ACCENT();
+    mark.layer.cornerRadius = 7;
+    [header addSubview:mark];
+
+    UILabel *title = [[UILabel alloc] initWithFrame:CGRectMake(CGRectGetMaxX(mark.frame) + S2, 42, 220, 20)];
+    title.font = [UIFont systemFontOfSize:17 weight:UIFontWeightSemibold];
+    title.textColor = C_TEXT();
+    title.text = @"GOD 注入器";
+    [header addSubview:title];
+
+    UILabel *sub = [[UILabel alloc] initWithFrame:CGRectMake(CGRectGetMaxX(mark.frame) + S2, 63, 260, 16)];
+    sub.font = [UIFont systemFontOfSize:12 weight:UIFontWeightRegular];
+    sub.textColor = C_MUTED();
+    sub.text = @"卡密授权 · 自动注入";
+    [header addSubview:sub];
+
+    self.statusDot = [[UILabel alloc] initWithFrame:CGRectMake(W - S3 - 60, 48, 8, 8)];
+    self.statusDot.backgroundColor = C_MUTED();
+    self.statusDot.layer.cornerRadius = 4;
+    self.statusDot.clipsToBounds = YES;
+    [header addSubview:self.statusDot];
+
+    self.statusText = [[UILabel alloc] initWithFrame:CGRectMake(W - S3 - 48, 42, 48, 20)];
+    self.statusText.font = [UIFont systemFontOfSize:12 weight:UIFontWeightMedium];
+    self.statusText.textColor = C_MUTED();
+    self.statusText.textAlignment = NSTextAlignmentRight;
+    self.statusText.text = @"待机";
+    [header addSubview:self.statusText];
+
+    UIView *hLine = [[UIView alloc] initWithFrame:CGRectMake(0, 87.5, W, 0.5)];
+    hLine.backgroundColor = C_LINE();
+    [header addSubview:hLine];
+
+    y = 88 + S4;
 
     // ── 状态 ──
-    UILabel *stateTitle = [self sectionTitle:@"状态"];
-    stateTitle.frame = CGRectMake(kSpace3, y, W, 20);
-    [scroll addSubview:stateTitle];
-    y += 20 + kSpace2;
+    [scroll addSubview:[self label:@"状态" frame:CGRectMake(S3, y, contentW, 16)]];
+    y += 16 + S2;
 
-    GODGroup *stateGroup = [[GODGroup alloc] initWithFrame:CGRectMake(kSpace3, y, W, kRowHeight * 3)];
-    self.rowAccess = [self addRow:@"沙盒访问" value:@"未检查" group:stateGroup index:0 total:3];
-    self.rowGroup  = [self addRow:@"App Group" value:@"未检查" group:stateGroup index:1 total:3];
-    self.rowGame   = [self addRow:@"游戏容器" value:@"未检查" group:stateGroup index:2 total:3];
-    [scroll addSubview:stateGroup];
-    y += stateGroup.bounds.size.height + kSpace4;
+    GODPanel *statePanel = [[GODPanel alloc] initWithFrame:CGRectMake(S3, y, contentW, ROW_H * 3)];
+    self.rowAccess = [self row:@"沙盒访问" value:@"未检查" panel:statePanel idx:0];
+    self.rowGroup  = [self row:@"App Group" value:@"未检查" panel:statePanel idx:1];
+    self.rowGame   = [self row:@"游戏容器" value:@"未检查" panel:statePanel idx:2];
+    [scroll addSubview:statePanel];
+    y += statePanel.bounds.size.height + S4;
 
     // ── 卡密 ──
-    UILabel *cardTitle = [self sectionTitle:@"卡密"];
-    cardTitle.frame = CGRectMake(kSpace3, y, W, 20);
-    [scroll addSubview:cardTitle];
-    y += 20 + kSpace2;
+    [scroll addSubview:[self label:@"卡密" frame:CGRectMake(S3, y, contentW, 16)]];
+    y += 16 + S2;
 
-    GODGroup *cardGroup = [[GODGroup alloc] initWithFrame:CGRectMake(kSpace3, y, W, kRowHeight)];
-    self.cardField = [[UITextField alloc] initWithFrame:CGRectMake(kSpace3, 0, W - kSpace3 * 2, kRowHeight)];
-    self.cardField.font = [UIFont systemFontOfSize:17];
+    GODPanel *cardPanel = [[GODPanel alloc] initWithFrame:CGRectMake(S3, y, contentW, ROW_H)];
+    self.cardField = [[UITextField alloc] initWithFrame:CGRectMake(S3, 0, contentW - S3 * 2, ROW_H)];
+    self.cardField.font = [UIFont fontWithName:@"Menlo" size:15] ?: [UIFont systemFontOfSize:15];
     self.cardField.textColor = C_TEXT();
-    self.cardField.placeholder = @"输入卡密";
-    self.cardField.autocapitalizationType = UITextAutocapitalizationTypeNone;
+    self.cardField.attributedPlaceholder =
+        [[NSAttributedString alloc] initWithString:@"XXXX-XXXX-XXXX-XXXX"
+                                        attributes:@{ NSForegroundColorAttributeName: [C_MUTED() colorWithAlphaComponent:0.6],
+                                                      NSFontAttributeName: [UIFont fontWithName:@"Menlo" size:15] ?: [UIFont systemFontOfSize:15] }];
+    self.cardField.autocapitalizationType = UITextAutocapitalizationTypeAllCharacters;
     self.cardField.autocorrectionType = UITextAutocorrectionTypeNo;
+    self.cardField.keyboardType = UIKeyboardTypeASCIICapable;
     self.cardField.clearButtonMode = UITextFieldViewModeWhileEditing;
-    [cardGroup addSubview:self.cardField];
-    [scroll addSubview:cardGroup];
-    y += cardGroup.bounds.size.height + kSpace4;
-
-    // ── 操作 ──
-    UILabel *actionTitle = [self sectionTitle:@"操作"];
-    actionTitle.frame = CGRectMake(kSpace3, y, W, 20);
-    [scroll addSubview:actionTitle];
-    y += 20 + kSpace2;
-
-    GODGroup *actionGroup = [[GODGroup alloc] initWithFrame:CGRectMake(kSpace3, y, W, kRowHeight * 2)];
-    self.btnSetup = [self addAction:@"初始化" group:actionGroup index:0 total:2];
-    [self.btnSetup addTarget:self action:@selector(onInit) forControlEvents:UIControlEventTouchUpInside];
-    self.btnStart = [self addAction:@"开始注入" group:actionGroup index:1 total:2];
-    [self.btnStart addTarget:self action:@selector(onStart) forControlEvents:UIControlEventTouchUpInside];
-    [scroll addSubview:actionGroup];
-    y += actionGroup.bounds.size.height + kSpace4;
+    [cardPanel addSubview:self.cardField];
+    [scroll addSubview:cardPanel];
+    y += cardPanel.bounds.size.height + S4;
 
     // ── 日志 ──
-    UILabel *logTitle = [self sectionTitle:@"日志"];
-    logTitle.frame = CGRectMake(kSpace3, y, W, 20);
-    [scroll addSubview:logTitle];
-    y += 20 + kSpace2;
+    [scroll addSubview:[self label:@"日志" frame:CGRectMake(S3, y, contentW, 16)]];
+    y += 16 + S2;
 
-    GODGroup *logGroup = [[GODGroup alloc] initWithFrame:CGRectMake(kSpace3, y, W, 280)];
-    self.logView = [[UITextView alloc] initWithFrame:CGRectMake(kSpace3, kSpace2, W - kSpace3 * 2, 280 - kSpace2 * 2)];
+    GODPanel *logPanel = [[GODPanel alloc] initWithFrame:CGRectMake(S3, y, contentW, 240)];
+    logPanel.backgroundColor = C_SURF2();
+    self.logView = [[UITextView alloc] initWithFrame:CGRectMake(S3, S3, contentW - S3 * 2, 240 - S3 * 2)];
     self.logView.backgroundColor = [UIColor clearColor];
-    self.logView.textColor = C_TEXT2();
-    self.logView.font = [UIFont fontWithName:@"Menlo" size:12] ?: [UIFont systemFontOfSize:12];
+    self.logView.textColor = C_MUTED();
+    self.logView.font = [UIFont fontWithName:@"Menlo" size:11] ?: [UIFont systemFontOfSize:11];
     self.logView.editable = NO;
     self.logView.textContainerInset = UIEdgeInsetsZero;
     self.logView.textContainer.lineFragmentPadding = 0;
-    [logGroup addSubview:self.logView];
-    [scroll addSubview:logGroup];
-    y += logGroup.bounds.size.height + kSpace5;
+    [logPanel addSubview:self.logView];
+    [scroll addSubview:logPanel];
+    y += logPanel.bounds.size.height + S5;
 
-    scroll.contentSize = CGSizeMake(self.view.bounds.size.width, y);
+    scroll.contentSize = CGSizeMake(W, y);
+
+    // ── 底部操作栏 ──
+    UIView *bar = [[UIView alloc] initWithFrame:CGRectMake(0, self.view.bounds.size.height - 88,
+                                                           W, 88)];
+    bar.autoresizingMask = UIViewAutoresizingFlexibleTopMargin | UIViewAutoresizingFlexibleWidth;
+    bar.backgroundColor = C_BASE();
+    UIView *bLine = [[UIView alloc] initWithFrame:CGRectMake(0, 0, W, 0.5)];
+    bLine.backgroundColor = C_LINE();
+    [bar addSubview:bLine];
+
+    CGFloat bw = (W - S3 * 2 - S2) / 2.0;
+    self.btnSetup = [self button:@"初始化" frame:CGRectMake(S3, S3, bw, 44) filled:NO];
+    [self.btnSetup addTarget:self action:@selector(onInit) forControlEvents:UIControlEventTouchUpInside];
+    [bar addSubview:self.btnSetup];
+
+    self.btnStart = [self button:@"开始注入" frame:CGRectMake(S3 + bw + S2, S3, bw, 44) filled:YES];
+    [self.btnStart addTarget:self action:@selector(onStart) forControlEvents:UIControlEventTouchUpInside];
+    [bar addSubview:self.btnStart];
+
+    [self.view addSubview:bar];
 
     [self log:@"就绪"];
 }
 
-#pragma mark - UI 构建辅助
+#pragma mark - 组件
 
-- (UILabel *)sectionTitle:(NSString *)text {
-    UILabel *l = [[UILabel alloc] init];
-    l.font = [UIFont systemFontOfSize:13 weight:UIFontWeightRegular];
-    l.textColor = C_TEXT2();
-    l.text = text;
+- (UILabel *)label:(NSString *)text frame:(CGRect)f {
+    UILabel *l = [[UILabel alloc] initWithFrame:f];
+    l.font = [UIFont systemFontOfSize:11 weight:UIFontWeightSemibold];
+    l.textColor = [C_MUTED() colorWithAlphaComponent:0.85];
+    l.text = [text uppercaseString];
     return l;
 }
 
-- (GODRow *)addRow:(NSString *)name value:(NSString *)value group:(UIView *)group index:(NSInteger)i total:(NSInteger)n {
-    CGFloat h = kRowHeight;
-    GODRow *r = [[GODRow alloc] initWithFrame:CGRectMake(0, h * i, group.bounds.size.width, h)];
-    r.label.text = name;
+- (GODRow *)row:(NSString *)name value:(NSString *)value panel:(UIView *)p idx:(NSInteger)i {
+    GODRow *r = [[GODRow alloc] initWithFrame:CGRectMake(0, ROW_H * i, p.bounds.size.width, ROW_H)];
+    r.name.text = name;
     r.value.text = value;
-    r.separator.hidden = (i == n - 1);
-    [group addSubview:r];
+    r.line.hidden = (i == 2);
+    [p addSubview:r];
     return r;
 }
 
-- (UIButton *)addAction:(NSString *)title group:(UIView *)group index:(NSInteger)i total:(NSInteger)n {
-    CGFloat h = kRowHeight;
-    UIButton *b = [UIButton buttonWithType:UIButtonTypeSystem];
-    b.frame = CGRectMake(0, h * i, group.bounds.size.width, h);
-    [b setTitle:title forState:UIControlStateNormal];
-    [b setTitleColor:C_ACTION() forState:UIControlStateNormal];
-    b.titleLabel.font = [UIFont systemFontOfSize:17];
-    b.contentHorizontalAlignment = UIControlContentHorizontalAlignmentLeft;
-    b.contentEdgeInsets = UIEdgeInsetsMake(0, kSpace3, 0, kSpace3);
-    if (i != n - 1) {
-        UIView *line = [[UIView alloc] initWithFrame:CGRectMake(kSpace3, h - 0.5, group.bounds.size.width - kSpace3, 0.5)];
-        line.backgroundColor = C_LINE();
-        [b addSubview:line];
+- (UIButton *)button:(NSString *)title frame:(CGRect)f filled:(BOOL)filled {
+    UIButton *b = [UIButton buttonWithType:UIButtonTypeCustom];
+    b.frame = f;
+    b.layer.cornerRadius = 10;
+    b.titleLabel.font = [UIFont systemFontOfSize:16 weight:UIFontWeightSemibold];
+    if (filled) {
+        b.backgroundColor = C_ACCENT();
+        [b setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+    } else {
+        b.backgroundColor = [UIColor clearColor];
+        b.layer.borderWidth = 1;
+        b.layer.borderColor = C_LINE2().CGColor;
+        [b setTitleColor:C_TEXT() forState:UIControlStateNormal];
     }
-    [group addSubview:b];
+    [b setTitle:title forState:UIControlStateNormal];
     return b;
 }
 
-#pragma mark - 日志
+#pragma mark - 日志与状态
 
 - (void)log:(NSString *)format, ... {
-    va_list ap;
-    va_start(ap, format);
+    va_list ap; va_start(ap, format);
     NSString *s = [[NSString alloc] initWithFormat:format arguments:ap];
     va_end(ap);
-
     dispatch_async(dispatch_get_main_queue(), ^{
-        NSString *line = [NSString stringWithFormat:@"%@\n", s];
+        NSDateFormatter *df = [[NSDateFormatter alloc] init];
+        df.dateFormat = @"HH:mm:ss";
+        NSString *line = [NSString stringWithFormat:@"%@  %@\n", [df stringFromDate:[NSDate date]], s];
         self.logView.text = [self.logView.text stringByAppendingString:line];
         [self.logView scrollRangeToVisible:NSMakeRange(self.logView.text.length, 0)];
+    });
+}
+
+- (void)setStatus:(NSString *)text color:(UIColor *)color {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        self.statusText.text = text;
+        self.statusText.textColor = color;
+        self.statusDot.backgroundColor = color;
+    });
+}
+
+- (void)setRow:(GODRow *)row ok:(BOOL)ok text:(NSString *)text {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        row.value.text = text;
+        row.value.textColor = ok ? C_GOOD() : C_BAD();
     });
 }
 
@@ -272,55 +327,44 @@ static void GODScanProgress(int64_t done, int64_t total, BOOL finished) {
     dispatch_async(dispatch_get_main_queue(), ^{
         self.btnSetup.enabled = !busy;
         self.btnStart.enabled = !busy;
-        self.btnSetup.alpha = busy ? 0.4 : 1.0;
-        self.btnStart.alpha = busy ? 0.4 : 1.0;
+        self.btnSetup.alpha = busy ? 0.45 : 1.0;
+        self.btnStart.alpha = busy ? 0.45 : 1.0;
     });
 }
 
-- (void)setRow:(GODRow *)row ok:(BOOL)ok text:(NSString *)text {
-    dispatch_async(dispatch_get_main_queue(), ^{
-        row.value.text = text;
-        row.value.textColor = ok ? C_TEXT2() : C_DANGER();
-    });
-}
-
-#pragma mark - 初始化（用实际探测，不看 wq_grant）
+#pragma mark - 初始化
 
 - (void)onInit {
     if (self.busy) return;
     self.busy = YES;
-    [self log:@"初始化…"];
+    [self setStatus:@"检查中" color:C_WARN()];
+    [self log:@"开始检查环境"];
 
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
-        // App Group：拿到的是签名时注入的组
         NSString *group = wq_app_group();
-        [self setRow:self.rowGroup ok:(group != nil)
-               text:(group ? @"已获取" : @"无")];
+        [self setRow:self.rowGroup ok:(group != nil) text:(group ? @"已获取" : @"无")];
 
-        // 沙盒访问：直接 stat 一个已知存在的子目录，不看 wq_grant 返回值
         NSString *probe = @"/var/mobile/Containers/Data/Application";
         struct stat st;
         BOOL canStat = wq_stat(probe, &st) && S_ISDIR(st.st_mode);
-
-        // 再试枚举前若干个容器，确认真的能读
-        NSArray *probeList = canStat ? wq_enumerate(probe, 0, nil, nil) : nil;
-        BOOL ok = (probeList.count > 0);
+        NSArray *list = canStat ? wq_enumerate(probe, 0, nil, nil) : nil;
+        BOOL ok = (list.count > 0);
         [self setRow:self.rowAccess ok:ok
-               text:(ok ? [NSString stringWithFormat:@"可用 · %lu 容器", (unsigned long)probeList.count]
-                        : @"不可用")];
-        [self log:ok ? [NSString stringWithFormat:@"沙盒访问正常，可见 %lu 个容器", (unsigned long)probeList.count]
-                    : @"沙盒访问失败"];
+               text:(ok ? [NSString stringWithFormat:@"%lu 个容器", (unsigned long)list.count] : @"不可用")];
+        [self log:ok ? [NSString stringWithFormat:@"沙盒可用，%lu 个容器", (unsigned long)list.count]
+                    : @"沙盒不可用，检查签名 entitlement"];
 
-        // 找游戏
         NSString *found = nil;
-        for (NSString *dir in probeList) {
+        for (NSString *dir in list) {
             NSString *label = wq_container_label(dir);
             if (label && [label isEqualToString:kGameBundleID]) { found = dir; break; }
         }
         self.gameContainer = found;
-        [self setRow:self.rowGame ok:(found != nil) text:(found ? @"已找到" : @"未找到")];
-        if (found) [self log:[NSString stringWithFormat:@"游戏容器：%@", found]];
+        [self setRow:self.rowGame ok:(found != nil) text:(found ? @"已定位" : @"未找到")];
+        if (found) [self log:[NSString stringWithFormat:@"%@", found]];
 
+        BOOL allOK = ok && found && group;
+        [self setStatus:(allOK ? @"就绪" : @"异常") color:(allOK ? C_GOOD() : C_BAD())];
         self.busy = NO;
     });
 }
@@ -329,45 +373,43 @@ static void GODScanProgress(int64_t done, int64_t total, BOOL finished) {
 
 - (void)onStart {
     if (self.busy) return;
-
-    NSString *card = [self.cardField.text stringByTrimmingCharactersInSet:
-                      [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    NSString *card = [[self.cardField.text uppercaseString]
+                      stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
     if (card.length == 0) {
-        [self log:@"先输入卡密"];
+        [self log:@"请先填写卡密"];
+        [self setStatus:@"缺卡密" color:C_WARN()];
         return;
     }
 
     self.busy = YES;
     [self.cardField resignFirstResponder];
-    [self log:@"开始注入…"];
+    [self setStatus:@"下载中" color:C_WARN()];
+    [self log:@"开始注入"];
 
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
         @try { [self doInject:card]; }
-        @catch (NSException *e) { [self log:[NSString stringWithFormat:@"异常：%@", e.reason]]; }
+        @catch (NSException *e) { [self log:[NSString stringWithFormat:@"异常 %@", e.reason]]; }
         self.busy = NO;
     });
 }
 
 - (void)doInject:(NSString *)card {
-    // 容器：没找到就现找
     NSString *container = self.gameContainer;
     if (!container) {
-        [self log:@"查找游戏容器…"];
+        [self log:@"定位游戏容器"];
         NSArray *dirs = wq_enumerate(@"/var/mobile/Containers/Data/Application", 0, nil, nil);
-        for (NSString *dir in dirs) {
-            NSString *label = wq_container_label(dir);
-            if (label && [label isEqualToString:kGameBundleID]) { container = dir; break; }
+        for (NSString *d in dirs) {
+            NSString *label = wq_container_label(d);
+            if (label && [label isEqualToString:kGameBundleID]) { container = d; break; }
         }
     }
     if (!container) {
         [self log:@"未找到游戏容器"];
-        [self setRow:self.rowGame ok:NO text:@"未找到"];
+        [self setStatus:@"失败" color:C_BAD()];
         return;
     }
     self.gameContainer = container;
-    [self log:[NSString stringWithFormat:@"容器：%@", container]];
 
-    // 目录
     NSArray<NSString *> *parts = @[@"Documents", @"DeltaForce", @"Saved", @"LuaDebug",
                                    @"LuaSource", @"DFM", @"BusinessEntrance"];
     NSString *cur = container;
@@ -377,57 +419,51 @@ static void GODScanProgress(int64_t done, int64_t total, BOOL finished) {
         if (wq_stat(cur, &st) && S_ISDIR(st.st_mode)) continue;
         NSString *err = nil;
         if (!wq_create_dir(cur, &err)) {
-            [self log:[NSString stringWithFormat:@"建目录失败 %@：%@", p, err ?: @"?"]];
+            [self log:[NSString stringWithFormat:@"建目录失败 %@", p]];
+            [self setStatus:@"失败" color:C_BAD()];
             return;
         }
         [self log:[NSString stringWithFormat:@"创建 %@", p]];
     }
 
-    // 下载（带卡密）
     NSString *url = [NSString stringWithFormat:@"%@%@?card=%@", kServerBase, kDownloadPath,
                      [self urlEncode:card]];
-    [self log:@"校验卡密并下载…"];
+    [self log:@"校验卡密"];
     NSData *data = [self downloadSync:url];
     if (!data || data.length < 100) {
-        [self log:[NSString stringWithFormat:@"下载失败（%lu 字节）", (unsigned long)data.length]];
+        [self log:@"下载失败"];
+        [self setStatus:@"失败" color:C_BAD()];
         return;
     }
-
-    // 服务端可能返回 JSON 错误
-    if (data.length < 4096 && [self looksLikeJSON:data]) {
+    if (data.length < 4096 && [self isJSON:data]) {
         NSString *s = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-        [self log:[NSString stringWithFormat:@"服务端返回：%@", s]];
+        [self log:[NSString stringWithFormat:@"卡密无效 %@", s]];
+        [self setStatus:@"卡密无效" color:C_BAD()];
         return;
     }
 
     const unsigned char *h = data.bytes;
-    BOOL isLua = (data.length >= 4 && h[0] == 0x1b && h[1] == 'L' && h[2] == 'u' && h[3] == 'a');
-    [self log:[NSString stringWithFormat:@"下载 %lu 字节，格式%@", (unsigned long)data.length,
-               isLua ? @"正确" : @"异常"]];
-    if (!isLua) {
-        [self log:@"不是 Lua 字节码，已中止"];
+    if (!(data.length >= 4 && h[0] == 0x1b && h[1] == 'L' && h[2] == 'u' && h[3] == 'a')) {
+        [self log:@"文件格式异常"];
+        [self setStatus:@"失败" color:C_BAD()];
         return;
     }
+    [self log:[NSString stringWithFormat:@"下载完成 %lu KB", (unsigned long)(data.length / 1024)]];
 
-    // 备份 + 写入
     NSString *dest = [cur stringByAppendingPathComponent:@"EntranceFlow.lua"];
     struct stat st;
     if (wq_stat(dest, &st)) {
         NSData *old = wq_read(dest, 0, NULL);
-        if (old) {
-            wq_write([dest stringByAppendingString:@".bak"], old, NULL);
-            [self log:@"已备份原文件"];
-        }
+        if (old) { wq_write([dest stringByAppendingString:@".bak"], old, NULL); }
     }
-
     NSString *werr = nil;
-    BOOL ok = wq_stat(dest, &st) ? wq_write(dest, data, &werr)
-                                 : wq_create_file(dest, data, &werr);
+    BOOL ok = wq_stat(dest, &st) ? wq_write(dest, data, &werr) : wq_create_file(dest, data, &werr);
     if (ok) {
-        [self log:[NSString stringWithFormat:@"写入成功（%lu 字节）", (unsigned long)data.length]];
-        [self log:@"完成，进游戏查看"];
+        [self log:@"写入成功，进游戏查看"];
+        [self setStatus:@"完成" color:C_GOOD()];
     } else {
-        [self log:[NSString stringWithFormat:@"写入失败：%@", werr ?: @"?"]];
+        [self log:[NSString stringWithFormat:@"写入失败 %@", werr ?: @""]];
+        [self setStatus:@"失败" color:C_BAD()];
     }
 }
 
@@ -439,7 +475,7 @@ static void GODScanProgress(int64_t done, int64_t total, BOOL finished) {
     return [s stringByAddingPercentEncodingWithAllowedCharacters:allowed] ?: s;
 }
 
-- (BOOL)looksLikeJSON:(NSData *)d {
+- (BOOL)isJSON:(NSData *)d {
     const unsigned char *b = d.bytes;
     for (NSUInteger i = 0; i < MIN(d.length, (NSUInteger)8); i++) {
         if (b[i] == ' ' || b[i] == '\n' || b[i] == '\r' || b[i] == '\t') continue;
@@ -464,7 +500,7 @@ static void GODScanProgress(int64_t done, int64_t total, BOOL finished) {
         dispatch_semaphore_signal(sem);
     }] resume];
     dispatch_semaphore_wait(sem, dispatch_time(DISPATCH_TIME_NOW, 45 * NSEC_PER_SEC));
-    if (err) [self log:[NSString stringWithFormat:@"网络错误：%@", err.localizedDescription]];
+    if (err) [self log:[NSString stringWithFormat:@"网络 %@", err.localizedDescription]];
     return result;
 }
 
@@ -477,15 +513,19 @@ static void GODScanProgress(int64_t done, int64_t total, BOOL finished) {
 @end
 
 @implementation GODAppDelegate
-- (BOOL)application:(UIApplication *)app didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
+- (BOOL)application:(UIApplication *)app didFinishLaunchingWithOptions:(NSDictionary *)opts {
+    (void)opts;
     self.window = [[UIWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
     GODInjectViewController *vc = [[GODInjectViewController alloc] init];
     UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:vc];
-    nav.navigationBar.translucent = NO;
-    nav.navigationBar.barTintColor = C_BG();
-    nav.navigationBar.titleTextAttributes = @{ NSForegroundColorAttributeName: C_TEXT() };
+    [nav setNavigationBarHidden:YES animated:NO];
     self.window.rootViewController = nav;
     [self.window makeKeyAndVisible];
+
+    // 深色状态栏
+    if (@available(iOS 13.0, *)) {
+        self.window.overrideUserInterfaceStyle = UIUserInterfaceStyleDark;
+    }
     return YES;
 }
 @end
