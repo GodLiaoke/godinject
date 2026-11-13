@@ -1,14 +1,12 @@
 #!/usr/bin/env bash
-# 构建 GOD注入器.ipa（arm64，ad-hoc 签名，带 App Group entitlement）
-# 依赖：macOS + Xcode（iOS 26 SDK）
+# 构建 GODInject.ipa —— Swift UI + Objective-C 沙盒访问
 set -euo pipefail
 
 ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 cd "$ROOT"
 
-MINIMUM_IOS_VERSION=26.0
+MIN_IOS=26.0
 APP_NAME=GODInject
-BUNDLE_NAME=GODInject
 FINAL_IPA=${GOD_FINAL_IPA:-GODInject.ipa}
 [[ "$FINAL_IPA" != /* ]] && FINAL_IPA="$ROOT/$FINAL_IPA"
 
@@ -24,24 +22,40 @@ APP="$OUT/Payload/$APP_NAME.app"
 mkdir -p "$APP"
 
 SDK=$(xcrun --sdk iphoneos --show-sdk-path)
-echo "SDK: $SDK"
-xcrun --sdk iphoneos --show-sdk-version
+SDKVER=$(xcrun --sdk iphoneos --show-sdk-version)
+echo "SDK: $SDK ($SDKVER)"
 
-# 只编译必要模块：沙盒访问 + LaunchServices + 我们的 UI
-xcrun --sdk iphoneos clang -fobjc-arc -fmodules \
-    -fmodules-cache-path="$OUT/ModuleCache" \
-    -arch arm64 \
-    -miphoneos-version-min="$MINIMUM_IOS_VERSION" \
-    -isysroot "$SDK" \
-    -Wall -Wextra -Wno-unused-parameter -O2 \
+# ── 1) Objective-C 编译成 .o ──────────────────────────────
+echo "== compiling Objective-C =="
+OBJ_DIR="$OUT/obj"
+mkdir -p "$OBJ_DIR"
+for f in WQCore WQAccess WQLaunchServices; do
+  echo "   $f.m"
+  xcrun --sdk iphoneos clang -c -fobjc-arc -fmodules \
+      -fmodules-cache-path="$OUT/ModuleCache" \
+      -arch arm64 -miphoneos-version-min="$MIN_IOS" \
+      -isysroot "$SDK" -O2 -Wno-unused-parameter \
+      "$f.m" -o "$OBJ_DIR/$f.o"
+done
+
+# ── 2) Swift 编译 + 链接 ─────────────────────────────────
+echo "== compiling Swift =="
+SWIFT_SRC=$(ls Sources/*.swift)
+xcrun --sdk iphoneos swiftc \
+    -sdk "$SDK" \
+    -target arm64-apple-ios"$MIN_IOS" \
+    -import-objc-header Bridging.h \
+    -O -whole-module-optimization \
+    -parse-as-library \
+    -module-name GODInject \
+    $SWIFT_SRC \
+    "$OBJ_DIR/WQCore.o" "$OBJ_DIR/WQAccess.o" "$OBJ_DIR/WQLaunchServices.o" \
     -framework UIKit -framework Foundation -framework Security \
-    WQCore.m WQAccess.m WQLaunchServices.m main.m \
-    -o "$APP/$BUNDLE_NAME"
+    -o "$APP/$APP_NAME"
 
 cp Info.plist "$APP/Info.plist"
 plutil -convert binary1 "$APP/Info.plist"
 codesign -f -s - --entitlements entitlements.plist "$APP"
-
 codesign --verify --deep --strict "$APP"
 echo "signed OK"
 
