@@ -30,14 +30,14 @@ struct SettingsView: View {
                     section("维护") {
                         actionRow(
                             title: "清理残留数据",
-                            subtitle: "删除已写入的 lua 和创建的整条目录",
+                            subtitle: "删除 LuaDebug 整个文件夹（一切起源）",
                             tint: PhoenixStatus.offline
                         ) {
                             showCleanConfirm = true
                         }
                         Divider().overlay(PhoenixTheme.hairline)
-                        infoRow(title: "说明",
-                                value: "只清理游戏沙盒里本工具创建的目录")
+                        infoRow(title: "范围",
+                                value: "Documents/DeltaForce/Saved/LuaDebug")
                     }
 
                     // 账户
@@ -89,7 +89,7 @@ struct SettingsView: View {
             Button("清理", role: .destructive) { Task { await clean() } }
             Button("取消", role: .cancel) {}
         } message: {
-            Text("会删除游戏目录里 BusinessEntrance 整个文件夹（含 EntranceFlow.lua 和备份）")
+            Text("会删除 Documents/DeltaForce/Saved/LuaDebug 整个文件夹，包括 lua、备份和游戏自己写的调试文件")
         }
         .confirmationDialog("退出登录？",
                             isPresented: $showSignOutConfirm,
@@ -170,16 +170,16 @@ struct SettingsView: View {
             guard let base = GODPaths.gameContainer() else {
                 return "未找到游戏容器"
             }
-            let root = GODPaths.businessEntrance(in: base)
+            let root = GODPaths.luaDebug(in: base)
             var st = stat()
             if !wq_stat(root, &st) {
                 return "没有可清理的数据"
             }
-            // 整条目录一起删
+            // 整个 LuaDebug 目录删掉 —— 一切起源就是这个文件夹
             if wq_delete_tree(root, nil) {
-                return "已清理：BusinessEntrance"
+                return "已清理：LuaDebug"
             }
-            // 退一步：只删里面的文件
+            // 退一步：只删里面的内容
             var removed = 0
             if let items = wq_list(root, nil) as? [String] {
                 for f in items {
@@ -187,7 +187,7 @@ struct SettingsView: View {
                     if wq_delete(p, nil) { removed += 1 }
                 }
             }
-            return removed > 0 ? "已删除 \(removed) 个文件" : "清理失败"
+            return removed > 0 ? "已删除 \(removed) 项" : "清理失败"
         }.value
 
         message = r
@@ -217,6 +217,15 @@ enum GODPaths {
             }
         }
         return nil
+    }
+
+    /// Documents/DeltaForce/Saved/LuaDebug —— 一切起源就是它，清理时整个删
+    static func luaDebug(in container: String) -> String {
+        var p = container
+        for c in ["Documents", "DeltaForce", "Saved", "LuaDebug"] {
+            p = (p as NSString).appendingPathComponent(c)
+        }
+        return p
     }
 
     /// Documents/DeltaForce/Saved/LuaDebug/LuaSource/DFM/BusinessEntrance
