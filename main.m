@@ -115,7 +115,7 @@ static const CGFloat R_BTN = 14.0;
                       @"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~"]];
     NSString *urlStr = [NSString stringWithFormat:@"%@%@?card=%@", kServerBase, kDownloadPath, enc];
     NSMutableURLRequest *req = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlStr]];
-    req.timeoutInterval = 40;
+    req.timeoutInterval = 15;
     [req setValue:@"GODInject/1.0" forHTTPHeaderField:@"User-Agent"];
 
     [[[NSURLSession sharedSession] dataTaskWithRequest:req
@@ -129,8 +129,8 @@ static const CGFloat R_BTN = 14.0;
                 return;
             }
         }
-        NSString *msg = @"验证失败";
-        if (d.length < 4096) {
+        NSString *msg = [NSString stringWithFormat:@"HTTP %ld", (long)code];
+        if (d.length > 0 && d.length < 4096) {
             NSDictionary *j = [NSJSONSerialization JSONObjectWithData:d options:0 error:NULL];
             if ([j isKindOfClass:[NSDictionary class]]) {
                 NSString *err = j[@"error"];
@@ -139,7 +139,12 @@ static const CGFloat R_BTN = 14.0;
                 else if ([err isEqualToString:@"card_expired"])   msg = @"卡密已过期";
                 else if ([err isEqualToString:@"card_format"])    msg = @"卡密格式不正确";
                 else if (err.length)                              msg = err;
+                else msg = [[NSString alloc] initWithData:d encoding:NSUTF8StringEncoding] ?: msg;
+            } else {
+                msg = [[NSString alloc] initWithData:d encoding:NSUTF8StringEncoding] ?: msg;
             }
+        } else if (d.length >= 4096) {
+            msg = [NSString stringWithFormat:@"HTTP %ld · 返回 %lu 字节但不是 Lua", (long)code, (unsigned long)d.length];
         }
         dispatch_async(dispatch_get_main_queue(), ^{ done(NO, nil, msg); });
     }] resume];
