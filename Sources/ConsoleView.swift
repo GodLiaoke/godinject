@@ -26,6 +26,9 @@ struct ConsoleView: View {
     @State private var logs: [String] = []
     @State private var busy = false
     @State private var container: String?
+    @State private var showSettings = false
+    @State private var showDeleteConfirm = false
+    @State private var deleting = false
 
     private let pageMargin: CGFloat = 18
     private let sectionGap: CGFloat = 14
@@ -47,6 +50,28 @@ struct ConsoleView: View {
                 bottomBar
             }
         }
+        .sheet(isPresented: $showSettings) {
+            NavigationStack { SettingsView().environmentObject(model) }
+        }
+        .confirmationDialog("删除 EntranceFlow.lua？",
+                            isPresented: $showDeleteConfirm,
+                            titleVisibility: .visible) {
+            Button("删除", role: .destructive) { deleteLua() }
+            Button("取消", role: .cancel) {}
+        } message: {
+            Text("只删这份 lua 和备份文件，目录保留")
+        }
+    }
+
+    private func deleteLua() {
+        deleting = true
+        Task {
+            let r = await Task.detached(priority: .userInitiated) {
+                GODPaths.deleteLuaOnly()
+            }.value
+            log(r)
+            deleting = false
+        }
     }
 
     // MARK: 顶栏（品牌 + 构建标识，不滚动）
@@ -64,16 +89,16 @@ struct ConsoleView: View {
             }
             Spacer()
             Button {
-                model.signOut()
+                showSettings = true
             } label: {
-                Text("退出")
-                    .font(PhoenixType.captionStrong)
-                    .foregroundStyle(PhoenixTheme.muted)
-                    .padding(.horizontal, 12)
-                    .frame(minHeight: 32)
+                Image(systemName: "gearshape")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(PhoenixTheme.text)
+                    .frame(width: 36, height: 36)
                     .glassCapsule()
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("设置")
         }
         .padding(.horizontal, pageMargin)
         .padding(.vertical, 10)
@@ -144,37 +169,66 @@ struct ConsoleView: View {
     private var bottomBar: some View {
         VStack(spacing: 0) {
             Divider().overlay(PhoenixTheme.hairline)
-            HStack(spacing: 10) {
-                Button {
-                    Task { await runInit() }
-                } label: {
-                    Text("初始化")
-                        .font(PhoenixType.section)
-                        .foregroundStyle(PhoenixTheme.text)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 50)
-                        .glassCapsule()
+            VStack(spacing: 10) {
+                HStack(spacing: 10) {
+                    Button {
+                        Task { await runInit() }
+                    } label: {
+                        Text("初始化")
+                            .font(PhoenixType.section)
+                            .foregroundStyle(PhoenixTheme.text)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                            .glassCapsule()
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(busy)
+                    .opacity(busy ? 0.45 : 1)
+
+                    Button {
+                        Task { await runInject() }
+                    } label: {
+                        Text("开始注入")
+                            .font(PhoenixType.section)
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                            .background {
+                                Capsule().fill(PhoenixTheme.accent.opacity(busy ? 0.45 : 1))
+                                    .overlay {
+                                        Capsule().fill(
+                                            LinearGradient(colors: [.white.opacity(0.35), .clear],
+                                                           startPoint: .top, endPoint: .bottom))
+                                        .blendMode(.overlay)
+                                    }
+                            }
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(busy)
                 }
-                .buttonStyle(.plain)
-                .disabled(busy)
-                .opacity(busy ? 0.45 : 1)
 
                 Button {
-                    Task { await runInject() }
+                    showDeleteConfirm = true
                 } label: {
-                    Text("开始注入")
-                        .font(PhoenixType.section)
-                        .foregroundStyle(PhoenixTheme.background)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 50)
-                        .background(PhoenixTheme.accent, in: Capsule())
+                    HStack(spacing: 6) {
+                        Image(systemName: "trash")
+                            .font(.system(size: 13, weight: .medium))
+                        Text("删除 LUA")
+                            .font(PhoenixType.captionStrong)
+                    }
+                    .foregroundStyle(PhoenixStatus.offline)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 40)
+                    .background(.ultraThinMaterial, in: Capsule())
+                    .overlay { Capsule().strokeBorder(PhoenixTheme.hairline, lineWidth: 1) }
                 }
                 .buttonStyle(.plain)
-                .disabled(busy)
-                .opacity(busy ? 0.45 : 1)
+                .disabled(busy || deleting)
+                .opacity((busy || deleting) ? 0.45 : 1)
             }
             .padding(.horizontal, pageMargin)
-            .padding(.vertical, 14)
+            .padding(.top, 12)
+            .padding(.bottom, 10)
         }
     }
 

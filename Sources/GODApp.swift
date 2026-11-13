@@ -25,7 +25,7 @@ struct RootView: View {
     var body: some View {
         Group {
             if model.licensed {
-                ConsoleView()
+                NavigationStack { ConsoleView() }
             } else {
                 LicenseView()
             }
