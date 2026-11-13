@@ -29,7 +29,7 @@ static void GODScanProgress(int64_t done, int64_t total, BOOL finished) {
 
 @interface GODInjectViewController : UIViewController
 @property (nonatomic, strong) UILabel *noticeLabel;
-@property (nonatomic, strong) UIButton *initButton;
+@property (nonatomic, strong) UIButton *btnInit;
 @property (nonatomic, strong) UIButton *startButton;
 @property (nonatomic, strong) UITextView *logView;
 @property (nonatomic, assign) BOOL busy;
@@ -57,11 +57,11 @@ static void GODScanProgress(int64_t done, int64_t total, BOOL finished) {
 
     // 两个按钮
     CGFloat bw = (W - 60) / 2.0;
-    self.initButton = [self makeButton:@"初始化" frame:CGRectMake(20, y, bw, 50)];
+    self.btnInit = [self makeButton:@"初始化" frame:CGRectMake(20, y, bw, 50)];
     self.startButton = [self makeButton:@"开始" frame:CGRectMake(40 + bw, y, bw, 50)];
-    [self.initButton addTarget:self action:@selector(onInit) forControlEvents:UIControlEventTouchUpInside];
+    [self.btnInit addTarget:self action:@selector(onInit) forControlEvents:UIControlEventTouchUpInside];
     [self.startButton addTarget:self action:@selector(onStart) forControlEvents:UIControlEventTouchUpInside];
-    [self.view addSubview:self.initButton];
+    [self.view addSubview:self.btnInit];
     [self.view addSubview:self.startButton];
     y += 70;
 
@@ -122,9 +122,9 @@ static void GODScanProgress(int64_t done, int64_t total, BOOL finished) {
 - (void)setBusy:(BOOL)busy {
     _busy = busy;
     dispatch_async(dispatch_get_main_queue(), ^{
-        self.initButton.enabled = !busy;
+        self.btnInit.enabled = !busy;
         self.startButton.enabled = !busy;
-        self.initButton.alpha = busy ? 0.45 : 1.0;
+        self.btnInit.alpha = busy ? 0.45 : 1.0;
         self.startButton.alpha = busy ? 0.45 : 1.0;
     });
 }
