@@ -20,14 +20,14 @@ struct LicenseView: View {
     @FocusState private var focused: Bool
 
     private var input: String { Self.normalize(card) }
-    /// T3 侧接受 8–40 位可见字符；不再因为"不是 24 位"就把按钮锁死。
-    private var ready: Bool { (8...40).contains(input.count) }
+    /// 服务端卡密是 16 位可见字符（4 组 × 4 位）。
+    private var ready: Bool { input.count == 16 }
 
     /// 输入被改写时的提示：只报**码位**，不打印卡密本身。
     private var inputNote: String? {
         guard let parse = lastParse else { return nil }
         var parts: [String] = []
-        if parse.truncated { parts.append("有效字符超过 24 位，已取前 24 位") }
+        if parse.truncated { parts.append("有效字符超过 16 位，已取前 16 位") }
         if !parse.droppedCodePoints.isEmpty {
             var unique: [UInt32] = []
             for code in parse.droppedCodePoints where !unique.contains(code) { unique.append(code) }
@@ -73,7 +73,7 @@ struct LicenseView: View {
                 Text("输入卡密")
                     .font(PhoenixType.section)
                     .foregroundStyle(.primary)
-                Text("24 位字母和数字，大小写不限")
+                Text("16 位字母和数字，大小写不限")
                     .font(PhoenixType.caption)
                     .foregroundStyle(.secondary)
             }
@@ -179,11 +179,11 @@ struct LicenseView: View {
                 .onSubmit { if ready { start() } }
 
             // 输入框右侧的黄色字数提示：满 24 位高亮，提示"够了，可以点验证"
-            Text("\(card.count)/24")
+            Text("\(card.count)/16")
                 .font(.system(size: 12, weight: .semibold, design: .monospaced))
-                .foregroundStyle(card.count == 24 ? Color.yellow : Color.yellow.opacity(0.55))
+                .foregroundStyle(card.count == 16 ? Color.yellow : Color.yellow.opacity(0.55))
                 .monospacedDigit()
-                .accessibilityLabel("已输入 \(card.count) 位，共 24 位")
+                .accessibilityLabel("已输入 \(card.count) 位，共 16 位")
         }
     }
 
@@ -224,19 +224,19 @@ struct LicenseView: View {
 
     /// 卡密解析结果：规范值 + **被丢掉了什么**（关键：不许静默丢字符）。
     struct LicenseInput: Equatable {
-        /// 规范后的卡密（只含 0-9A-Z，最多 24 位）
+        /// 规范后的卡密（只含 0-9A-Z，最多 16 位）
         var value: String
         /// 粘贴进来的原始字符数
         var originalLength: Int
         /// 被丢掉的字符码位（按出现顺序，含重复）
         var droppedCodePoints: [UInt32]
-        /// 有效字符超过 24 位被截断
+        /// 有效字符超过 16 位被截断
         var truncated: Bool
     }
 
     /// 卡密规范化。
     ///
-    /// 官方卡密的真身是 24 位可见字符 + 4 个由网关重算补回的不可见字符，
+    /// 卡密是 16 位可见字符（4 组 × 4 位，中间用 - 分隔）。
     /// 客户端只收可见部分；零宽字符与空格丢掉。
     ///
     /// ⚠️ 旧实现是 `filter { isASCII && isLetter || isNumber }` 后**静默** `prefix(24)`：
@@ -258,10 +258,10 @@ struct LicenseView: View {
             }
         }
         let upper = kept.uppercased()
-        return LicenseInput(value: String(upper.prefix(24)),
+        return LicenseInput(value: String(upper.prefix(16)),
                             originalLength: raw.count,
                             droppedCodePoints: dropped,
-                            truncated: upper.count > 24)
+                            truncated: upper.count > 16)
     }
 
     static func normalize(_ raw: String) -> String { parse(raw).value }
