@@ -93,7 +93,7 @@ static void GODScanProgress(int64_t done, int64_t total, BOOL finished) {
     if ((self = [super init])) {
         self.backgroundColor = C_CARD();
         self.layer.cornerRadius = kRadius;
-        self.layer.cornerCurve = kCALayerCornerCurveContinuous;
+        // 圆角曲线用默认
     }
     return self;
 }
