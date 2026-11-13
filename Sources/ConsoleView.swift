@@ -55,7 +55,7 @@ struct ConsoleView: View {
         HStack(spacing: 10) {
             PhoenixMark(size: 30)
             VStack(alignment: .leading, spacing: 1) {
-                Text("GOD 注入器")
+                Text("God全系统")
                     .font(PhoenixType.section)
                     .foregroundStyle(PhoenixTheme.text)
                 Text(BuildInfo.shortLine)

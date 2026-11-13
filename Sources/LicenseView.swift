@@ -1,4 +1,4 @@
-import SwiftUI
+﻿import SwiftUI
 import UIKit
 
 /// 激活页 —— 卡片 A 的入口面。
@@ -45,12 +45,12 @@ struct LicenseView: View {
                     Spacer(minLength: 44)
                     PhoenixMark(size: 96)
 
-                    Text("不死鸟CodeV")
+                    Text("God全系统")
                         .font(PhoenixType.display)
                         .foregroundStyle(.primary)
                         .padding(.top, 20)
 
-                    Text("无畏契约 · 实时雷达")
+                    Text("卡密授权 · 自动注入")
                         .font(PhoenixType.body)
                         .foregroundStyle(.secondary)
                         .padding(.top, 6)
@@ -92,15 +92,27 @@ struct LicenseView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .frame(minHeight: 50)
-                .foregroundStyle(model.activating || ready ? Color.white : Color.white.opacity(0.45))
-                .background(
-                    LinearGradient(
-                        colors: [PhoenixTheme.accent, PhoenixTheme.warm],
-                        startPoint: .leading, endPoint: .trailing
-                    ),
-                    in: RoundedRectangle(cornerRadius: 14, style: .continuous)
-                )
-                .opacity(model.activating || ready ? 1 : 0.5)
+                .foregroundStyle(.white)
+                .background {
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(PhoenixTheme.accent.opacity(model.activating || ready ? 0.92 : 0.35))
+                        .overlay {
+                            // 液态玻璃高光：顶部一道白，底部一道暗
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [Color.white.opacity(0.45), .clear, Color.black.opacity(0.10)],
+                                        startPoint: .top, endPoint: .bottom
+                                    )
+                                )
+                                .blendMode(.overlay)
+                        }
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .strokeBorder(Color.white.opacity(0.35), lineWidth: 1)
+                        }
+                        .shadow(color: PhoenixTheme.accent.opacity(0.25), radius: 12, y: 6)
+                }
             }
             .buttonStyle(.plain)
             .disabled(!ready || model.activating)

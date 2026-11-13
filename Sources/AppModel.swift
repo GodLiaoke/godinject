@@ -104,9 +104,22 @@ struct GlassPanelElevated: ViewModifier {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .fill(.ultraThinMaterial)
                     .overlay {
+                        // 白色液态玻璃：半透明白 + 顶部高光 + 底部暗边
                         RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                            .fill(PhoenixTheme.panel.opacity(0.55))
+                            .fill(PhoenixTheme.panel)
+                            .overlay {
+                                LinearGradient(
+                                    colors: [Color.white.opacity(0.55), .clear, Color.black.opacity(0.04)],
+                                    startPoint: .top, endPoint: .bottom
+                                )
+                                .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+                            }
                     }
+                    .overlay {
+                        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                            .strokeBorder(Color.white.opacity(0.6), lineWidth: 1)
+                    }
+                    .shadow(color: Color.black.opacity(0.06), radius: 16, y: 8)
             }
     }
 }

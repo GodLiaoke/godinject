@@ -23,35 +23,35 @@ import SwiftUI
 enum PhoenixTheme {
     /// 不死鸟·烈焰红：近黑底 + 烈焰红主色，红/橙承担层级与动作，绿/琥珀/玫红承担真实连接状态。
     /// 所有原生页面都只从这里取色，避免每个页面再各自拼一套单调的蓝。
-    static let background = Color(red: 0.039, green: 0.020, blue: 0.031)   // #0a0508
-    static let backgroundRaised = Color(red: 0.063, green: 0.024, blue: 0.035)
-    static let panel = Color(red: 0.094, green: 0.039, blue: 0.055)        // #180a0e
-    static let panelRaised = Color(red: 0.149, green: 0.063, blue: 0.078)  // #261014
+    static let background = Color(red: 0.969, green: 0.973, blue: 0.980)   // #F7F8FA
+    static let backgroundRaised = Color.white
+    static let panel = Color.white.opacity(0.72)                           // 液态玻璃面
+    static let panelRaised = Color.white.opacity(0.88)
     static let accent = Color(red: 1.000, green: 0.231, blue: 0.188)        // 主色 #ff3b30
     static let violet = Color(red: 1.000, green: 0.541, blue: 0.239)
-    static let auroraViolet = Color(red: 1.000, green: 0.541, blue: 0.239)
-    static let auroraPink = Color(red: 1.000, green: 0.435, blue: 0.569)
+    static let auroraViolet = Color(red: 0.494, green: 0.427, blue: 0.937)  // #7E6DEF
+    static let auroraPink = Color(red: 0.945, green: 0.541, blue: 0.776)
     static let warm = Color(red: 1.000, green: 0.722, blue: 0.302)
     static let cyan = Color(red: 0.490, green: 0.827, blue: 0.988)
-    static let text = Color.white
-    static let muted = Color(red: 0.722, green: 0.604, blue: 0.600)
+    static let text = Color(red: 0.110, green: 0.110, blue: 0.118)          // #1C1C1E
+    static let muted = Color(red: 0.557, green: 0.557, blue: 0.576)         // #8E8E93
     /// 分隔线/描边：浮动元素用 `hairline`，静态分组用系统 `separator`。
-    static let hairline = Color.white.opacity(0.10)
+    static let hairline = Color.black.opacity(0.08)
     /// 全屏雷达上那两件原生控件共用的"玻璃"底色。
     /// 比面板色更透 —— 它们浮在**地图**上，不能像卡片一样实心。
-    static let hudGlass = Color(red: 0.063, green: 0.024, blue: 0.035).opacity(0.72)
+    static let hudGlass = Color.white.opacity(0.72)
     /// 控制台英雄卡的低亮度光晕；不把雷达地图的青色误当成连接状态。
-    static let consoleGlow = auroraViolet.opacity(0.22)
-    static let consoleStroke = accent.opacity(0.40)
+    static let consoleGlow = auroraViolet.opacity(0.16)
+    static let consoleStroke = accent.opacity(0.28)
 
     // MARK: - 信号灯（只表示连接状态）
 
     /// 有数据在流。
-    static let signalGo = Color(red: 0.184, green: 0.824, blue: 0.541)     // #2fd28a
+    static let signalGo = Color(red: 0.157, green: 0.718, blue: 0.365)   // #28B75D
     /// 在等（引擎好了但还没数据 / 正在启动）。
-    static let signalWait = Color(red: 1.000, green: 0.722, blue: 0.302)   // #ffb84d
+    static let signalWait = Color(red: 0.898, green: 0.518, blue: 0.000) // #E58400
     /// 坏了（引擎未启动、面板不可达、转发异常）。
-    static let signalFault = Color(red: 1.000, green: 0.420, blue: 0.561)  // #ff6b8f
+    static let signalFault = Color(red: 0.878, green: 0.231, blue: 0.341) // #E03B57
     /// 危险/错误色。macOS 端历史上叫 `danger`（MacRootView 用它），
     /// 这里留一个别名 —— 之前 macOS target 因为找不到 `danger` **编译不过**，
     /// 而它的构建脚本把 xcodebuild 输出丢进了 /dev/null，所以一直没被发现。
@@ -198,22 +198,22 @@ struct PhoenixBackground: View {
         ZStack {
             PhoenixTheme.background
             RadialGradient(
-                colors: [PhoenixTheme.auroraViolet.opacity(0.28), .clear],
+                colors: [PhoenixTheme.auroraViolet.opacity(0.13), .clear],
                 center: .topTrailing,
                 startRadius: 10, endRadius: 430
             )
             RadialGradient(
-                colors: [PhoenixTheme.auroraPink.opacity(0.13), .clear],
+                colors: [PhoenixTheme.cyan.opacity(0.12), .clear],
                 center: .bottomTrailing,
                 startRadius: 10, endRadius: 360
             )
             RadialGradient(
-                colors: [PhoenixTheme.cyan.opacity(0.11), .clear],
+                colors: [PhoenixTheme.accent.opacity(0.05), .clear],
                 center: .bottomLeading,
                 startRadius: 10, endRadius: 320
             )
             LinearGradient(
-                colors: [.clear, PhoenixTheme.background.opacity(0.42)],
+                colors: [Color.white, PhoenixTheme.background],
                 startPoint: .top, endPoint: .bottom
             )
         }
